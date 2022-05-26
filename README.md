@@ -14,3 +14,5 @@ To compile, add the code as its own directory, navigate to said directory, and r
 Uses Qemu emulator to emulate the project, along with debugging with GDB.
 
 This project only works on Linux Machines.
+
+Boot1.asm was provided to me by my professor. The makefile, kernel.c and kernel.asm were all written by myself.

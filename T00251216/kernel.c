@@ -1,7 +1,9 @@
+//i was tasked with creating variable types, those being a char, short, and int
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;
 #include <limits.h>
+//defining my own NULL 
 #define NULL ((void*)0)
 
 //declaring a struct for the idt
@@ -23,6 +25,7 @@ struct idtr
 } __attribute__((packed));
 typedef struct idtr idtr_t;
 
+//a Process Control Block structure
 struct pcb
 {
     uint32_t esp;
@@ -32,20 +35,17 @@ struct pcb
 } __attribute__((packed));
 typedef struct pcb pcb_t;
 
+//the capcity of my queue
 #define QCAPACITY 7
 pcb_t PCBs[QCAPACITY];
-
-
 
 //function prototypes
 //program 1 functions
 void k_clearscr();
 void print_border(int start_row, int start_col, int end_row, int end_col);
 void print_long_line(int start_, int start_col, int length);
-
 //asm function
 void k_print(char *string, int string_length, int row, int col);
-
 //program 2 functions
 void defaultHandler();
 void lidtr(idtr_t* idtr);
@@ -60,19 +60,17 @@ void idleProcess();
 void p1();
 void p2();
 void p3();
+//we used these in program 2 and 3, but they were no longer needed in program 4
 //void p4();
 //void p5();
 void goToNext(uint32_t process, uint32_t priority, char* processName, int nameSize);
-
 //asm functions for program 2
 void dispatch();
 void go();
-
 //functions for program 3
 void setupPIC();
 void outportb(uint16_t port, uint8_t value);
 void init_timer_dev(int);
-
 //functions for program 4
 void enqueue_priority(pcb_t *pcb);
 void idle();
@@ -87,21 +85,28 @@ int currentStack = 0;
 int nextToRun = 0;
 unsigned int retval = 0;
 int numProcesses = 0;
+//the current row on the screen we will be using
 int gloRow;
 pcb_t* queue;
-
 pcb_t* running;
 
 //our main
 int main()
 {
+    //sets the current row on the screen to 1
     gloRow = 1;
+    //clears the screen on anything before, prepping for printing
     k_clearscr();
+    //prints a border along the edges of the screen
     print_border(0,0,24,79);
+    //prints "running processes on the second column at the global row
     k_print("Running processes", 17, 1, gloRow);
     gloRow++;
+    //create the interrupt descriptor table
     init_idt();
+    //sets up the process interrupt controller
     setup_PIC();
+    //our round-robin queue is set to 50ms
     init_timer_dev(50);
 
     //round robin structures
@@ -114,7 +119,6 @@ int main()
     //now begin running the first process
     
     go();
-    k_print("check", 5, 5, 5);
 
     while(1)
     {
@@ -123,6 +127,7 @@ int main()
     return 0;
 }
 
+//these next two functions were added to ensure that the processes themselves properly displayed the queue
 int convertNumHeader(uint32_t number, char buffer[])
 {
     if(number == 0)
@@ -206,6 +211,7 @@ void defaultHandler()
     while(1);
 }
 
+//creates an infinite process, this will end when used in the RR scheduling however
 void idleProcess()
 {
     while(1)
@@ -214,11 +220,13 @@ void idleProcess()
     }
 }
 
+//allocates our PCB
 pcb_t *pcbAllocate()
 {
     return &PCBs[nextToRun++];
 }
 
+//allocates our stack
 uint32_t* stackAllocate()
 {
     int* temp = stackSpace + currentStack;
@@ -261,12 +269,14 @@ void init_idt_entry(idt_entry_t *entry, uint32_t base, uint16_t selector, uint8_
     entry -> access = access;
 }
 
+//an enqueue function created for program 2, has no priority scheduling
 // void enqueue(pcb_t *pcb)
 // {
 //     queues.PCBs[queues.end++] = *pcb;
 //     queues.end = queues.end % QCAPACITY;
 // }
 
+//dequeues off the stack
 pcb_t *dequeue()
 {
     //are there any left to dequeue?
@@ -284,6 +294,7 @@ pcb_t *dequeue()
 
 }
 
+//a prioritized version of enqueue
 void enqueue_priority(pcb_t *pcb)
 {
     //pcb->next = NULL;
@@ -324,6 +335,7 @@ void enqueue_priority(pcb_t *pcb)
     }
 }
 
+//the process creator, creating the stack
 int createProcess(uint32_t processEntry, uint32_t priority)
 {
     
@@ -391,6 +403,7 @@ int createProcess(uint32_t processEntry, uint32_t priority)
 	return 0;
 }
 
+//the processes themselves
 void p1()
 {
     
@@ -494,6 +507,7 @@ void idle()
 //     }
 // }
 
+//this is to move from one process to the next without cluttering up the main
 void goToNext(uint32_t process, uint32_t priority, char* processName, int nameSize)
 {
     retval = createProcess((uint32_t) process, priority);
@@ -506,6 +520,7 @@ void goToNext(uint32_t process, uint32_t priority, char* processName, int nameSi
     }
 }
 
+//used in our ASM file
 void setRunning(uint32_t esp)
 {
     running->esp = esp;
